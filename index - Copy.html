@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Payment Gateway</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* General Setup */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #333; }
+
+        /* Preloader Style */
+        #preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+        #preloader p { margin-top: 15px; color: #1e3a8a; font-weight: 700; }
+
+        /* Main Container */
+        .checkout-container {
+            background-color: #ffffff; width: 100%; max-width: 500px;
+            padding: 30px; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            opacity: 0; /* Hidden initially, shown after preloader */
+            transition: opacity 0.5s ease;
+        }
+
+        /* Header */
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h2 { font-size: 24px; color: #1f2937; margin-bottom: 5px; }
+        .header p { font-size: 14px; color: #6b7280; }
+
+        /* Progress Bar */
+        .progress-bar-container { margin-bottom: 30px; }
+        .progress-bar { height: 8px; background-color: #e5e7eb; border-radius: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: #3b82f6; width: 33.3%; transition: width 0.5s ease; border-radius: 4px; }
+        .step-indicators { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: #6b7280; }
+        .step-indicators span.active { color: #3b82f6; font-weight: 700; }
+
+        /* Form Styling */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #374151; }
+        .form-input {
+            width: 100%; padding: 12px 15px; border: 1px solid #d1d5db;
+            border-radius: 8px; font-size: 16px; transition: all 0.3s ease; outline: none;
+            background-color: #f9fafb;
+        }
+        .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background-color: #fff; }
+
+        .row { display: flex; gap: 15px; }
+        .col { flex: 1; }
+
+        /* Navigation Buttons */
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 30px; }
+        .btn {
+            padding: 12px 25px; border: none; border-radius: 8px; font-size: 16px;
+            font-weight: 700; cursor: pointer; transition: background-color 0.3s;
+        }
+        .btn-primary { background-color: #10b981; color: white; }
+        .btn-primary:hover { background-color: #059669; }
+        .btn-secondary { background-color: #e5e7eb; color: #4b5563; }
+        .btn-secondary:hover { background-color: #d1d5db; }
+
+        /* Step Content (Hidden by default) */
+        .form-step { display: none; }
+        .form-step.active { display: block; }
+
+        /* Step 3 (Completion/Success) */
+        .completion-step { text-align: center; padding: 40px 0; }
+        .success-icon { font-size: 50px; color: #10b981; margin-bottom: 20px; }
+        .completion-step h3 { color: #10b981; margin-bottom: 10px; }
+        .completion-step p { color: #4b5563; }
+
+        /* Supported Cards */
+        .supported-cards { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; }
+        .supported-text { font-size: 14px; color: #6b7280; margin-bottom: 15px; }
+        .card-icons { display: flex; justify-content: center; gap: 15px; align-items: center; }
+        .card-icons img { height: 25px; filter: grayscale(10%); opacity: 0.8; transition: opacity 0.2s; }
+        .card-icons img:hover { opacity: 1; }
+
+        /* Processing Overlay */
+        #processing-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+        }
+        #processing-overlay p { margin-top: 20px; font-size: 18px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="preloader">
+        <img src="https://i.gifer.com/ZZ5H.gif" alt="Loading Spinner" width="80" height="80">
+        <p>Loading Secure Gateway...</p>
+    </div>
+
+    <div id="processing-overlay">
+        <img src="https://i.gifer.com/ZZ5H.gif" alt="Processing Payment" width="100" height="100">
+        <p>Processing Payment. Do not close this window...</p>
+    </div>
+
+    <div class="checkout-container" id="main-content">
+        
+        <div class="header">
+            <h2>Secure Checkout</h2>
+            <p>Order Total: <strong>$150.00 USD</strong></p>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+            <div class="step-indicators">
+                <span id="step1Indicator" class="active">Card Info</span>
+                <span id="step2Indicator">Verification</span>
+                <span id="step3Indicator">Completion</span>
+            </div>
+        </div>
+
+        <form id="paymentForm">
+
+            <div class="form-step active" id="step1">
+                <div class="form-group">
+                    <label class="form-label">Card Number</label>
+                    <input type="tel" class="form-input" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cardholder Name</label>
+                    <input type="text" class="form-input" placeholder="JOHN DOE" required>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label">Expiration Date (MM/YY)</label>
+                            <input type="tel" class="form-input" placeholder="MM/YY" maxlength="5" required>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label">CVV/CVC</label>
+                            <input type="tel" class="form-input" placeholder="123" maxlength="4" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-step" id="step2">
+                <p class="header" style="text-align: left; margin-bottom: 25px;">Enter the One-Time Password (OTP) sent to your registered mobile number for 3D Secure Verification.</p>
+                <div class="form-group">
+                    <label class="form-label">One-Time Password (OTP)</label>
+                    <input type="tel" class="form-input" placeholder="000000" maxlength="6" required>
+                </div>
+                <button type="button" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">Resend OTP</button>
+            </div>
+
+            <div class="form-step" id="step3">
+                <div class="completion-step">
+                    <div class="success-icon">✓</div>
+                    <h3>Payment Successful!</h3>
+                    <p>Your transaction has been securely processed and confirmed.</p>
+                    <p style="margin-top: 10px;">Transaction ID: #123456789</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons" id="navButtons">
+                <button type="button" class="btn btn-secondary" id="backBtn" style="display: none;">Back</button>
+                <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+                <button type="submit" class="btn btn-primary" id="payBtn" style="display: none;">Pay Now</button>
+            </div>
+            
+        </form>
+
+        <div class="supported-cards">
+            <p class="supported-text">We securely accept all major cards and networks:</p>
+            <div class="card-icons">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa" title="Visa">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/300px-Mastercard-logo.svg.png" alt="Mastercard" title="Mastercard">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/American_Express_logo.svg/300px-American_Express_logo.svg.png" alt="Amex" title="American Express">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" title="PayPal">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/50/Discover_Card_logo.svg" alt="Discover" title="Discover">
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const steps = [
+            document.getElementById('step1'), 
+            document.getElementById('step2'), 
+            document.getElementById('step3')
+        ];
+        const stepIndicators = [
+            document.getElementById('step1Indicator'),
+            document.getElementById('step2Indicator'),
+            document.getElementById('step3Indicator')
+        ];
+        const progressBarFill = document.getElementById('progressBarFill');
+        const nextBtn = document.getElementById('nextBtn');
+        const backBtn = document.getElementById('backBtn');
+        const payBtn = document.getElementById('payBtn');
+        const processingOverlay = document.getElementById('processing-overlay');
+        const preloader = document.getElementById('preloader');
+        const mainContent = document.getElementById('main-content');
+        let currentStep = 0;
+
+        // --- 1. Preloader Logic (Loading GIF on Page Load) ---
+        window.onload = function() {
+            setTimeout(() => {
+                preloader.style.opacity = '0';
+                mainContent.style.opacity = '1';
+                setTimeout(() => { preloader.style.display = 'none'; }, 500);
+            }, 1000); // Wait 1 second to show the spinner effect
+        };
+
+        // --- 2. Step Navigation Logic ---
+        function updateStep() {
+            // 1. Update form visibility
+            steps.forEach((step, index) => {
+                step.classList.remove('active');
+                if (index === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+
+            // 2. Update progress bar and indicators
+            const progress = (currentStep + 1) / steps.length * 100;
+            progressBarFill.style.width = `${progress}%`;
+            stepIndicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index <= currentStep);
+            });
+
+            // 3. Update button visibility
+            backBtn.style.display = currentStep > 0 && currentStep < 2 ? 'inline-block' : 'none';
+            nextBtn.style.display = currentStep < 1 ? 'inline-block' : 'none';
+            payBtn.style.display = currentStep === 1 ? 'inline-block' : 'none';
+            document.getElementById('navButtons').style.display = currentStep < 2 ? 'flex' : 'none';
+        }
+
+        // Handle Next Button
+        nextBtn.addEventListener('click', () => {
+            if (currentStep < 1) { // Only allow transition from Step 1 to Step 2
+                 // Basic validation: Check if required fields in current step are filled (for demo purposes)
+                const currentStepInputs = steps[currentStep].querySelectorAll('[required]');
+                let isValid = true;
+                currentStepInputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        isValid = false;
+                        input.style.border = '1px solid #ef4444'; // Red border on error
+                    } else {
+                        input.style.border = ''; // Reset border
+                    }
+                });
+                
+                if (isValid) {
+                    currentStep++;
+                    updateStep();
+                } else {
+                    alert('Please fill in all card details before proceeding.');
+                }
+            }
+        });
+
+        // Handle Back Button
+        backBtn.addEventListener('click', () => {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStep();
+            }
+        });
+
+        // --- 3. Payment Processing Logic (Loading GIF on Process) ---
+        payBtn.addEventListener('click', (event) => {
+            event.preventDefault(); 
+            
+             // Basic validation for Step 2
+            const otpInput = steps[1].querySelector('input[required]');
+            if (!otpInput.value.trim() || otpInput.value.length < 6) {
+                alert('Please enter a valid OTP.');
+                return;
+            }
+
+            // Show Processing Overlay
+            processingOverlay.style.display = 'flex';
+
+            // Simulate Network Request Delay (5 seconds)
+            setTimeout(() => {
+                processingOverlay.style.display = 'none';
+                
+                // Advance to Step 3 (Completion)
+                currentStep++;
+                updateStep();
+
+            }, 5000); 
+        });
+
+        // Initial setup
+        updateStep();
+    </script>
+
+</body>
+</html>
